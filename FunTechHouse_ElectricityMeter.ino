@@ -55,7 +55,7 @@ void loop()
 {
     if(client.loop() == false)
     {
-        client.connect("arduinoClient");
+        client.connect("FunTechHouse_ElectricityMeter");
         //miss_cnt++;
     }
 
