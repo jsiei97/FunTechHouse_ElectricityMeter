@@ -1,0 +1,29 @@
+== FunTechHouse_ElectricityMeter ==
+
+Electricity meter, read the pulses and post the results.
+This project uses a Arduino with a Ethernet shield, 
+and sends its results using MQTT to a Mosquitto server.
+
+
+=== Hardware Connections ===
+
+
+
+=== Arduino ===
+* http://www.arduino.cc/ 
+
+Built on Ubuntu with:
+* http://arduino.googlecode.com/files/arduino-1.0-linux.tgz
+
+Tested on
+* [http://arduino.cc/en/Main/ArduinoBoardUno Arduino Uno]
+* [http://arduino.cc/en/Main/ArduinoEthernetShield Arduino Ethernet Shield]
+
+=== Arduino Client for MQTT ===
+* http://knolleary.net/arduino-client-for-mqtt/
+* https://github.com/knolleary/pubsubclient
+
+=== Mosquitto, An Open Source MQTT v3.1 Broker ===
+* http://mosquitto.org/
+
+
