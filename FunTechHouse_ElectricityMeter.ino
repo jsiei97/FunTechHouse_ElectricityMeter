@@ -18,6 +18,7 @@ volatile unsigned int pulseCount1_kWh = 0;
 volatile unsigned int pulseCount2_Wh  = 0;   
 volatile unsigned int pulseCount2_kWh = 0;   
 
+volatile unsigned int updateCount = 0;   
 
 void callback(char* topic, byte* payload,unsigned int length) 
 {
@@ -68,24 +69,36 @@ void setup()
 
 void loop()
 {
+    //Talk with the server so he dont forget us.
     if(client.loop() == false)
     {
         client.connect(project_name);
     }
 
-    char str[30];
-
-    snprintf(str, 30, "energy=%u.%03u kWh", pulseCount1_kWh, pulseCount1_Wh);
-    if(client.connected())
+    //But only send data every minute or so
+    // 6 ->   6*10s =  60s = 1min
+    //12 -> 2*6*10s = 120s = 2min
+    //18 -> 3*6*10s = 180s = 3min
+    //BUT since the delay is not that accurate, 
+    // 18 is more like 3.5 to 4 minutes in real life...
+    if(updateCount > 18)
     {
-        client.publish(topic_meter01, str);
+        updateCount = 0;
+        char str[30];
+
+        snprintf(str, 30, "energy=%u.%03u kWh", pulseCount1_kWh, pulseCount1_Wh);
+        if(client.connected())
+        {
+            client.publish(topic_meter01, str);
+        }
+
+        snprintf(str, 30, "energy=%u.%03u kWh", pulseCount2_kWh, pulseCount2_Wh);
+        if(client.connected())
+        {
+            client.publish(topic_meter02, str);
+        }
     }
 
-    snprintf(str, 30, "energy=%u.%03u kWh", pulseCount2_kWh, pulseCount2_Wh);
-    if(client.connected())
-    {
-        client.publish(topic_meter02, str);
-    }
-
-    delay(10000); 
+    updateCount++; 
+    delay(10000); // 10*1000ms = 10s
 }
