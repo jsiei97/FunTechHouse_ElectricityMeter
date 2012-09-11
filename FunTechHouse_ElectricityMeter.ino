@@ -12,15 +12,15 @@ char topic_meter01[] = "FunTechHouse/Energy/meter01";
 char topic_meter02[] = "FunTechHouse/Energy/meter02";
 
 //Number of pulses, used to measure energy.
-volatile unsigned int pulseCount1_Wh  = 0;   
-volatile unsigned int pulseCount1_kWh = 0;   
+volatile unsigned int pulseCount1_Wh  = 0;
+volatile unsigned int pulseCount1_kWh = 0;
 
-volatile unsigned int pulseCount2_Wh  = 0;   
-volatile unsigned int pulseCount2_kWh = 0;   
+volatile unsigned int pulseCount2_Wh  = 0;
+volatile unsigned int pulseCount2_kWh = 0;
 
-volatile unsigned int updateCount = 0;   
+volatile unsigned int updateCount = 0;
 
-void callback(char* topic, byte* payload,unsigned int length) 
+void callback(char* topic, byte* payload,unsigned int length)
 {
     // handle message arrived
 }
@@ -28,6 +28,10 @@ void callback(char* topic, byte* payload,unsigned int length)
 // The interrupt routine
 void onPulse1()
 {
+    //One pulse from the meter equals 1 interupt
+    //if we have 1000 pulse/kWh then every interupt is worth 1Wh => pulseCount1_Wh +1
+    //if we have  500 pulse/kWh then every interupt is worth 2Wh => pulseCount1_Wh +2
+
     //pulseCounter
     pulseCount1_Wh++;
     if(pulseCount1_Wh == 1000)
@@ -39,7 +43,7 @@ void onPulse1()
 
 // The interrupt routine
 void onPulse2()
-{  
+{
     //pulseCounter
     pulseCount2_Wh++;
     if(pulseCount2_Wh == 1000)
@@ -55,11 +59,11 @@ void setup()
 {
     // KWH interrupt attached to IRQ 0  = pin2
     attachInterrupt(0, onPulse1, FALLING);
-    // KWH interrupt attached to IRQ 1  = pin3    
+    // KWH interrupt attached to IRQ 1  = pin3
     attachInterrupt(1, onPulse2, FALLING);
 
     Ethernet.begin(mac, ip);
-    if (client.connect(project_name)) 
+    if (client.connect(project_name))
     {
         client.publish(topic_meter01, "#Hello world");
         client.publish(topic_meter02, "#Hello world");
@@ -79,7 +83,7 @@ void loop()
     // 6 ->   6*10s =  60s = 1min
     //12 -> 2*6*10s = 120s = 2min
     //18 -> 3*6*10s = 180s = 3min
-    //BUT since the delay is not that accurate, 
+    //BUT since the delay is not that accurate,
     // 18 is more like 3.5 to 4 minutes in real life...
     if(updateCount > 18)
     {
@@ -99,6 +103,6 @@ void loop()
         }
     }
 
-    updateCount++; 
+    updateCount++;
     delay(10000); // 10*1000ms = 10s
 }
