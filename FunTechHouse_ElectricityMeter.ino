@@ -3,9 +3,7 @@
 #include "PubSubClient.h"
 
 // Update these with values suitable for your network.
-byte mac[]    = { 0xDE, 0xED, 0xBA, 0xFE, 0xFE, 0x02 };
-byte ip[]     = { 192, 168, 0, 32 };
-byte server[] = { 192, 168, 0, 64 };
+byte mac[]    = { 0x90, 0xA2, 0xDA, 0x00, 0x29, 0x7D };
 
 char project_name[]  = "FunTechHouse_ElectricityMeter";
 char topic_meter01[] = "FunTechHouse/Energy/meter01";
@@ -19,6 +17,8 @@ volatile unsigned int pulseCount2_Wh  = 0;
 volatile unsigned int pulseCount2_kWh = 0;
 
 volatile unsigned int updateCount = 0;
+
+PubSubClient client("mosqhub", 1883, callback);
 
 void callback(char* topic, byte* payload,unsigned int length)
 {
@@ -53,8 +53,6 @@ void onPulse2()
     }
 }
 
-PubSubClient client(server, 1883, callback);
-
 void setup()
 {
     // KWH interrupt attached to IRQ 0  = pin2
@@ -62,12 +60,11 @@ void setup()
     // KWH interrupt attached to IRQ 1  = pin3
     attachInterrupt(1, onPulse2, FALLING);
 
-    Ethernet.begin(mac, ip);
+    Ethernet.begin(mac);
     if (client.connect(project_name))
     {
         client.publish(topic_meter01, "#Hello world");
         client.publish(topic_meter02, "#Hello world");
-        //client.subscribe("inTopic");
     }
 }
 
