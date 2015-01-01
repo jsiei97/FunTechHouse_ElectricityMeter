@@ -41,9 +41,19 @@ void onPulse1()
     }
 }
 
+//volatile unsigned long prevTimePulse2 = 0;
+
 // The interrupt routine
 void onPulse2()
 {
+    //If it is less than Xms since last irq,
+    //then it is probably a false pulse.
+    //if (millis() - prevTimePulse2 < 10)
+    //{
+    //    return;
+    //}
+    //prevTimePulse2 = millis();
+
     //pulseCounter
     pulseCount2_Wh++;
     if(pulseCount2_Wh == 1000)
