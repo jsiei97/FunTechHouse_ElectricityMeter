@@ -25,6 +25,12 @@ void callback(char* topic, byte* payload,unsigned int length)
     // handle message arrived
 }
 
+//Define to configure input
+#define PULSE1_IMPL_PER_KWH_500
+//#define PULSE1_IMPL_PER_KWH_1000
+#define PULSE2_IMPL_PER_KWH_500
+//#define PULSE2_IMPL_PER_KWH_1000
+
 // The interrupt routine
 void onPulse1()
 {
@@ -33,7 +39,13 @@ void onPulse1()
     //if we have  500 pulse/kWh then every interupt is worth 2Wh => pulseCount1_Wh +2
 
     //pulseCounter
+#if defined (PULSE1_IMPL_PER_KWH_500)
+    pulseCount1_Wh+=2;
+#endif
+#if defined (PULSE1_IMPL_PER_KWH_1000)
     pulseCount1_Wh++;
+#endif
+
     if(pulseCount1_Wh == 1000)
     {
         pulseCount1_Wh = 0;
@@ -55,7 +67,12 @@ void onPulse2()
     //prevTimePulse2 = millis();
 
     //pulseCounter
+#if defined (PULSE2_IMPL_PER_KWH_500)
+    pulseCount2_Wh+=2;
+#endif
+#if defined (PULSE2_IMPL_PER_KWH_1000)
     pulseCount2_Wh++;
+#endif
     if(pulseCount2_Wh == 1000)
     {
         pulseCount2_Wh = 0;
