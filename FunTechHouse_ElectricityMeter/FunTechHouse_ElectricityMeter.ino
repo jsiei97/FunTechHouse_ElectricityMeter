@@ -41,8 +41,8 @@
 char str[50];
 char isoDate[25];
 
-DateTime now;
-DateTime last;
+DateTime now;  ///< Current time
+DateTime last; ///< Last synced time
 RTC_DS1307 rtc;
 QuickDate qd;
 
