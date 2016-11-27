@@ -1,0 +1,11 @@
+#tag_view.sh
+cscope.files
+cscope.out
+tags
+
+*.swp
+*.o
+
+#Ignore doxygen
+doxygen/
+doxygen.warn
