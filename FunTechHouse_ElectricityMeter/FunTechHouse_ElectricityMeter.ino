@@ -1,10 +1,43 @@
+/**
+ * @file FunTechHouse_ElectricityMeter.ino
+ * @author Johan Simonsson
+ * @brief Main file
+ *
+ * @mainpage The FunTechHouse ElectricityMeter
+ *
+ * Reads pulses from a electricity meter for the FunTechHouse project.
+ * This project uses a Arduino with a Ethernet shield,
+ * and sends its results using MQTT to a Mosquitto server.
+ *
+ * @see http://fun-tech.se/FunTechHouse/ElectricityMeter/index.php
+ * @see https://github.com/jsiei97/FunTechHouse_ElectricityMeter
+ */
+
+/*
+ * Copyright (C) 2016 Johan Simonsson
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 #include <SPI.h>
 #include <Ethernet.h>
 #include "PubSubClient.h"
 
-// Update these with values suitable for your network.
-byte mac[]    = { 0x90, 0xA2, 0xDA, 0x00, 0x29, 0x7D };
+/// This device MAC adress, it is written on the Shield and must be uniq.
+uint8_t mac[]    = { 0x90, 0xA2, 0xDA, 0x00, 0x29, 0x7D };
 
+/// The MQTT device name, this must be unique
 char project_name[]  = "FunTechHouse_ElectricityMeter";
 char topic_meter01[] = "FunTechHouse/Energy/meter01";
 char topic_meter02[] = "FunTechHouse/Energy/meter02";
@@ -18,12 +51,19 @@ volatile unsigned int pulseCount2_kWh = 0;
 
 volatile unsigned int updateCount = 0;
 
-PubSubClient client("mosqhub", 1883, callback);
-
-void callback(char* topic, byte* payload,unsigned int length)
+/**
+ * The MQTT subscribe callback function.
+ *
+ * @param[in] topic What mqtt topic triggered this callback
+ * @param[in] payload The actual message
+ * @param[in] length The message size
+ */
+void callback(char* topic, uint8_t* payload, unsigned int length)
 {
-    // handle message arrived
 }
+
+/// The MQTT client
+PubSubClient client("mosqhub", 1883, callback);
 
 //Define to configure input
 #define PULSE1_IMPL_PER_KWH_500
@@ -95,6 +135,9 @@ void setup()
     }
 }
 
+/**
+ * The main loop, runs all the time, over and over again.
+ */
 void loop()
 {
     //Talk with the server so he dont forget us.
