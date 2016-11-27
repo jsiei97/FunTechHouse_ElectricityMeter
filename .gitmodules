@@ -1,0 +1,9 @@
+[submodule "mod/FT_Time"]
+	path = mod/FT_Time
+	url = git@github.com:jsiei97/FT_Time.git
+[submodule "mod/pubsubclient"]
+	path = mod/pubsubclient
+	url = git@github.com:jsiei97/pubsubclient.git
+[submodule "mod/FT_Utils"]
+	path = mod/FT_Utils
+	url = git@github.com:jsiei97/FT_Utils.git
