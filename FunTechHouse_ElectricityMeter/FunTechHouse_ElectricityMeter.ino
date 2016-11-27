@@ -34,6 +34,18 @@
 #include <Ethernet.h>
 #include "PubSubClient.h"
 
+#include "QuickDate.h"
+#include "DateTime.h"
+#include "RTC_DS1307.h"
+
+char str[50];
+char isoDate[25];
+
+DateTime now;
+DateTime last;
+RTC_DS1307 rtc;
+QuickDate qd;
+
 /// This device MAC adress, it is written on the Shield and must be uniq.
 uint8_t mac[]    = { 0x90, 0xA2, 0xDA, 0x00, 0x29, 0x7D };
 
@@ -146,6 +158,35 @@ void loop()
         client.connect(project_name);
     }
 
+    if(false == client.connected())
+    {
+        client.connect(project_name);
+    }
+
+    //Serial.println("Time to check time...");
+    //Check time
+
+    //rtc.getTime(&now, &last);
+    if(!rtc.isrunning() || (now.secSince2000()-last.secSince2000()>(1*60*60)) )
+    {
+        Serial.println("Time to sync time...");
+        int qdStatus = qd.doTimeSync(str);
+        if(qdStatus > 0)
+        {
+            Serial.print("ok: ");
+            Serial.print(str);
+            Serial.print(" : ");
+            now.setTime(str);
+            rtc.adjust(&now);
+        }
+        else
+        {
+            Serial.print("fail: ");
+        }
+
+        Serial.println(qdStatus);
+    }
+
     //But only send data every minute or so
     // 6 ->   6*10s =  60s = 1min
     //12 -> 2*6*10s = 120s = 2min
@@ -155,15 +196,17 @@ void loop()
     if(updateCount > 18)
     {
         updateCount = 0;
-        char str[30];
 
-        snprintf(str, 30, "energy=%u.%03u kWh", pulseCount1_kWh, pulseCount1_Wh);
+        rtc.getTime(&now, &last);
+        now.isoDateString(isoDate);
+
+        snprintf(str, 30, "energy=%u.%03u kWh %s", pulseCount1_kWh, pulseCount1_Wh, isoDate);
         if(client.connected())
         {
             client.publish(topic_meter01, str);
         }
 
-        snprintf(str, 30, "energy=%u.%03u kWh", pulseCount2_kWh, pulseCount2_Wh);
+        snprintf(str, 30, "energy=%u.%03u kWh %s", pulseCount2_kWh, pulseCount2_Wh, isoDate);
         if(client.connected())
         {
             client.publish(topic_meter02, str);
