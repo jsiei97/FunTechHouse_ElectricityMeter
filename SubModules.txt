@@ -1,0 +1,27 @@
+# QuickDate timesync into DS1307
+git submodule add git@github.com:jsiei97/FT_Time.git mod/FT_Time
+
+# For MQTT
+git submodule add git@github.com:jsiei97/pubsubclient.git mod/pubsubclient
+
+# For double to string, and MQTT_Logic
+git submodule add git@github.com:jsiei97/FT_Utils.git mod/FT_Utils
+
+# Misc submodule commands
+git submodule status
+git submodule init
+git submodule update
+
+# Misc recursive submodule commands
+git submodule update --init --recursive
+git submodule update --recursive
+
+# Submodule status and sync commands
+git submodule foreach 'git log --oneline --max-count=1'
+git submodule foreach 'git remote update && git checkout master && git pull'
+
+#Links
+http://joncairns.com/2011/10/how-to-use-git-submodules/
+http://stackoverflow.com/questions/10168449/git-update-submodule-recursive
+
+
