@@ -30,13 +30,11 @@
 DateTime now;
 DateTime last;
 RTC_DS1307 rtc;
-char isoDate[25];
-
 
 bool blink = false;
 unsigned int cnt = 0;
 
-#define SIZE 50
+#define SIZE 100
 char str[SIZE];
 
 char* topic;
