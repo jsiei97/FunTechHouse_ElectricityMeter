@@ -132,6 +132,8 @@ void setup()
         client.publish(m1.getTopicPublish(), "#Hello world - Meter01");
         client.publish(m2.getTopicPublish(), "#Hello world - Meter02");
     }
+
+    Serial.println("Setup: done");
 }
 
 /**
@@ -150,13 +152,37 @@ void loop()
         client.connect(project_name);
     }
 
-    //Serial.println("Time to check time...");
-    //Check time
+    // Get current time from RTC
+    rtc.getTime(&now, &last);
 
-    //rtc.getTime(&now, &last);
-    if(!rtc.isrunning() || (now.secSince2000()-last.secSince2000()>(1*60*60)) )
+
+    bool timeToSync = false;
+
+    if( !rtc.isrunning() )
     {
-        Serial.println("Time to sync time...");
+        Serial.println("Time to sync time...(RTC is not running)");
+        timeToSync  = true;
+    }
+
+    // This may be bad if network is not there.
+    if( false == now.isTimeSet() )
+    {
+        Serial.println("Time to sync time...(Time not set)");
+        timeToSync  = true;
+    }
+
+    if( (now.secSince2000()-last.secSince2000()) > (1*60*60) )
+    {
+        Serial.println("Time to sync time...(Sync to old)");
+        Serial.println(now.secSince2000());
+        Serial.println(last.secSince2000());
+        timeToSync  = true;
+    }
+
+    //Check if it is time to sync time with server
+    if( true == timeToSync )
+    {
+        //Serial.println("Time to sync time...");
         int qdStatus = qd.doTimeSync(str);
         if(qdStatus > 0)
         {
@@ -186,7 +212,6 @@ void loop()
 
         m1.getValue(str, SIZE);
         sprintf(str + strlen(str)," time=");
-        rtc.getTime(&now, &last);
         now.appendIsoDateString(str, SIZE);
         Serial.println(str);
 
@@ -197,7 +222,6 @@ void loop()
 
         m2.getValue(str, SIZE);
         sprintf(str + strlen(str)," time=");
-        rtc.getTime(&now, &last);
         now.appendIsoDateString(str, SIZE);
         Serial.println(str);
 
