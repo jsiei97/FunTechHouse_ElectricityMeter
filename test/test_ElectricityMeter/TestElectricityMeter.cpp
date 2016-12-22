@@ -86,7 +86,7 @@ void TestElectricityMeter::test_add_1000()
     QCOMPARE((unsigned int)m.pulseCount_kWh,(unsigned int)0);
     QCOMPARE((unsigned int)m.pulseCount_Wh, (unsigned int)999);
     QCOMPARE(m.getValue(str, SIZE), true);
-    QCOMPARE("energy=0.999 kWh", str);
+    QCOMPARE("energy=0.999kWh", str);
     //qDebug() << m.pulseCount_kWh << m.pulseCount_Wh;
 
     // 1.000 kWh
@@ -95,14 +95,14 @@ void TestElectricityMeter::test_add_1000()
     QCOMPARE((unsigned int)m.pulseCount_Wh, (unsigned int)0);
     //qDebug() << m.pulseCount_kWh << m.pulseCount_Wh;
     QCOMPARE(m.getValue(str, SIZE), true);
-    QCOMPARE("energy=1.000 kWh", str);
+    QCOMPARE("energy=1.000kWh", str);
 
     // 1.001 kWh
     m.pulse();
     QCOMPARE((unsigned int)m.pulseCount_kWh,(unsigned int)1);
     QCOMPARE((unsigned int)m.pulseCount_Wh, (unsigned int)1);
     QCOMPARE(m.getValue(str, SIZE), true);
-    QCOMPARE("energy=1.001 kWh", str);
+    QCOMPARE("energy=1.001kWh", str);
     //qDebug() << m.pulseCount_kWh << m.pulseCount_Wh;
 
     for( int i=0 ; i<998 ; i++ )

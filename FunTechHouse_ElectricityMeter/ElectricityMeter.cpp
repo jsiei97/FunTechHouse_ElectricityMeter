@@ -20,7 +20,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
- 
+
 #include <stdio.h>
 
 #include "ElectricityMeter.h"
@@ -28,13 +28,13 @@
 ElectricityMeter::ElectricityMeter ( FT_ElectricityMeterType type )
 {
     this->type=type;
-    pulseCount_Wh = 0; 
+    pulseCount_Wh = 0;
     pulseCount_kWh= 0;
 }
 
 void ElectricityMeter::pulse()
 {
-    //Avoid to much work here since it should be 
+    //Avoid to much work here since it should be
     //called from inside irq.
 
     switch ( this->type )
@@ -59,9 +59,9 @@ bool ElectricityMeter::getValue(char* val, unsigned int size)
     if(size <= 25)
         return false;
 
-    unsigned int res = snprintf(val, size, 
-            "energy=%u.%03u kWh", 
-            this->pulseCount_kWh, 
+    unsigned int res = snprintf(val, size,
+            "energy=%u.%03ukWh",
+            this->pulseCount_kWh,
             this->pulseCount_Wh);
 
     if (size<res)
