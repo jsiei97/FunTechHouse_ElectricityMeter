@@ -33,13 +33,15 @@
 #include <SPI.h>
 #include <Ethernet.h>
 #include "PubSubClient.h"
+#include <Wire.h>
 
 #include "QuickDate.h"
 #include "DateTime.h"
 #include "RTC_DS1307.h"
+#include "ElectricityMeter.h"
 
-char str[50];
-char isoDate[25];
+#define SIZE 100
+char str[SIZE];
 
 DateTime now;  ///< Current time
 DateTime last; ///< Last synced time
@@ -51,15 +53,10 @@ uint8_t mac[]    = { 0x90, 0xA2, 0xDA, 0x00, 0x29, 0x7D };
 
 /// The MQTT device name, this must be unique
 char project_name[]  = "FunTechHouse_ElectricityMeter";
-char topic_meter01[] = "FunTechHouse/Energy/meter01";
-char topic_meter02[] = "FunTechHouse/Energy/meter02";
 
-//Number of pulses, used to measure energy.
-volatile unsigned int pulseCount1_Wh  = 0;
-volatile unsigned int pulseCount1_kWh = 0;
+ElectricityMeter m1(ELECTRICITYMETER_IMPL_PER_KWH_500);
+ElectricityMeter m2(ELECTRICITYMETER_IMPL_PER_KWH_500);
 
-volatile unsigned int pulseCount2_Wh  = 0;
-volatile unsigned int pulseCount2_kWh = 0;
 
 volatile unsigned int updateCount = 0;
 
@@ -77,32 +74,11 @@ void callback(char* topic, uint8_t* payload, unsigned int length)
 /// The MQTT client
 PubSubClient client("mosqhub", 1883, callback);
 
-//Define to configure input
-#define PULSE1_IMPL_PER_KWH_500
-//#define PULSE1_IMPL_PER_KWH_1000
-#define PULSE2_IMPL_PER_KWH_500
-//#define PULSE2_IMPL_PER_KWH_1000
 
 // The interrupt routine
 void onPulse1()
 {
-    //One pulse from the meter equals 1 interupt
-    //if we have 1000 pulse/kWh then every interupt is worth 1Wh => pulseCount1_Wh +1
-    //if we have  500 pulse/kWh then every interupt is worth 2Wh => pulseCount1_Wh +2
-
-    //pulseCounter
-#if defined (PULSE1_IMPL_PER_KWH_500)
-    pulseCount1_Wh+=2;
-#endif
-#if defined (PULSE1_IMPL_PER_KWH_1000)
-    pulseCount1_Wh++;
-#endif
-
-    if(pulseCount1_Wh == 1000)
-    {
-        pulseCount1_Wh = 0;
-        pulseCount1_kWh++;
-    }
+    m1.pulse();
 }
 
 //volatile unsigned long prevTimePulse2 = 0;
@@ -117,33 +93,44 @@ void onPulse2()
     //    return;
     //}
     //prevTimePulse2 = millis();
-
-    //pulseCounter
-#if defined (PULSE2_IMPL_PER_KWH_500)
-    pulseCount2_Wh+=2;
-#endif
-#if defined (PULSE2_IMPL_PER_KWH_1000)
-    pulseCount2_Wh++;
-#endif
-    if(pulseCount2_Wh == 1000)
-    {
-        pulseCount2_Wh = 0;
-        pulseCount2_kWh++;
-    }
+    m2.pulse();
 }
 
 void setup()
 {
+    // Open serial communications and wait for port to open:
+    Serial.begin(9600);
+
+    Wire.begin();
+    if(rtc.isrunning())
+    {
+        Serial.println("Clock is running");
+    }
+    else
+    {
+        Serial.println("Clock is NOT running");
+    }
+
     // KWH interrupt attached to IRQ 0  = pin2
     attachInterrupt(0, onPulse1, FALLING);
     // KWH interrupt attached to IRQ 1  = pin3
     attachInterrupt(1, onPulse2, FALLING);
 
+    m1.setTopic(
+            "FunTechHouse/VMP/meter01data",
+            "FunTechHouse/VMP/meter01"
+            );
+    m2.setTopic(
+            "FunTechHouse/ELP/meter02data",
+            "FunTechHouse/ELP/meter02"
+            );
+
+
     Ethernet.begin(mac);
     if (client.connect(project_name))
     {
-        client.publish(topic_meter01, "#Hello world");
-        client.publish(topic_meter02, "#Hello world");
+        client.publish(m1.getTopicPublish(), "#Hello world - Meter01");
+        client.publish(m2.getTopicPublish(), "#Hello world - Meter02");
     }
 }
 
@@ -197,19 +184,26 @@ void loop()
     {
         updateCount = 0;
 
+        m1.getValue(str, SIZE);
+        sprintf(str + strlen(str)," time=");
         rtc.getTime(&now, &last);
-        now.isoDateString(isoDate);
+        now.appendIsoDateString(str, SIZE);
+        Serial.println(str);
 
-        snprintf(str, 30, "energy=%u.%03u kWh %s", pulseCount1_kWh, pulseCount1_Wh, isoDate);
         if(client.connected())
         {
-            client.publish(topic_meter01, str);
+            client.publish(m1.getTopicPublish(), str);
         }
 
-        snprintf(str, 30, "energy=%u.%03u kWh %s", pulseCount2_kWh, pulseCount2_Wh, isoDate);
+        m2.getValue(str, SIZE);
+        sprintf(str + strlen(str)," time=");
+        rtc.getTime(&now, &last);
+        now.appendIsoDateString(str, SIZE);
+        Serial.println(str);
+
         if(client.connected())
         {
-            client.publish(topic_meter02, str);
+            client.publish(m2.getTopicPublish(), str);
         }
     }
 
