@@ -49,7 +49,7 @@ RTC_DS1307 rtc;
 QuickDate qd;
 
 /// This device MAC adress, it is written on the Shield and must be uniq.
-uint8_t mac[]    = { 0x90, 0xA2, 0xDA, 0x00, 0x29, 0x7D };
+uint8_t mac[]    = { 0x90, 0xA2, 0xDA, 0x00, 0x62, 0x80 };
 
 /// The MQTT device name, this must be unique
 char project_name[]  = "FunTechHouse_ElectricityMeter";
