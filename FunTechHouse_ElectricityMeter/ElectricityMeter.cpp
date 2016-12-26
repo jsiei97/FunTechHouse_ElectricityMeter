@@ -30,6 +30,12 @@ ElectricityMeter::ElectricityMeter ( FT_ElectricityMeterType type )
     this->type=type;
     pulseCount_Wh = 0;
     pulseCount_kWh= 0;
+
+    last_pulseCount_Wh = 0;
+    last_pulseCount_kWh= 0;
+
+    nextTime = false;
+    lastTime = true;
 }
 
 void ElectricityMeter::pulse()
@@ -52,6 +58,10 @@ void ElectricityMeter::pulse()
         pulseCount_Wh = 0;
         pulseCount_kWh++;
     }
+
+    //Mark that there is new data
+    //So we do not go into the "nextTime" state
+    nextTime = false;
 }
 
 bool ElectricityMeter::getValue(char* val, unsigned int size)
@@ -69,3 +79,60 @@ bool ElectricityMeter::getValue(char* val, unsigned int size)
 
     return true;
 }
+
+bool ElectricityMeter::getLastValue(char* val, unsigned int size)
+{
+    if(size <= 25)
+        return false;
+
+    unsigned int res = snprintf(val, size,
+            "energy=%u.%03ukWh",
+            this->last_pulseCount_kWh,
+            this->last_pulseCount_Wh);
+
+    if (size<res)
+        return false;
+
+    return true;
+}
+
+bool ElectricityMeter::oldValue()
+{
+    if(lastTime && newValue())
+    {
+        lastTime = false;
+        return true;
+    }
+
+    return false;
+}
+
+bool ElectricityMeter::newValue()
+{
+    if( (pulseCount_Wh  == last_pulseCount_Wh) && (pulseCount_kWh == last_pulseCount_kWh))
+    {
+        return false;
+    }
+
+    return true;
+}
+
+void ElectricityMeter::saveValue()
+{
+    last_pulseCount_Wh  = pulseCount_Wh;
+    last_pulseCount_kWh = pulseCount_kWh;
+
+    nextTime=true;
+}
+
+bool ElectricityMeter::isItNextTime()
+{
+    if(true==nextTime)
+    {
+        nextTime = false;
+        lastTime = true;
+        return true;
+    }
+    return false;
+}
+

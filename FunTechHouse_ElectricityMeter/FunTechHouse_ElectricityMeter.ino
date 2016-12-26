@@ -58,7 +58,6 @@ ElectricityMeter m1(ELECTRICITYMETER_IMPL_PER_KWH_500);
 ElectricityMeter m2(ELECTRICITYMETER_IMPL_PER_KWH_500);
 
 
-volatile unsigned int updateCount = 0;
 
 /**
  * The MQTT subscribe callback function.
@@ -96,65 +95,13 @@ void onPulse2()
     m2.pulse();
 }
 
-void setup()
+
+bool doTimeSync()
 {
-    // Open serial communications and wait for port to open:
-    Serial.begin(9600);
-
-    Wire.begin();
-    if(rtc.isrunning())
-    {
-        Serial.println("Clock is running");
-    }
-    else
-    {
-        Serial.println("Clock is NOT running");
-    }
-
-    // KWH interrupt attached to IRQ 0  = pin2
-    attachInterrupt(0, onPulse1, FALLING);
-    // KWH interrupt attached to IRQ 1  = pin3
-    attachInterrupt(1, onPulse2, FALLING);
-
-    m1.setTopic(
-            "FunTechHouse/VMP/meter01data",
-            "FunTechHouse/VMP/meter01"
-            );
-    m2.setTopic(
-            "FunTechHouse/ELP/meter02data",
-            "FunTechHouse/ELP/meter02"
-            );
-
-
-    Ethernet.begin(mac);
-    if (client.connect(project_name))
-    {
-        client.publish(m1.getTopicPublish(), "#Hello world - Meter01");
-        client.publish(m2.getTopicPublish(), "#Hello world - Meter02");
-    }
-
-    Serial.println("Setup: done");
-}
-
-/**
- * The main loop, runs all the time, over and over again.
- */
-void loop()
-{
-    //Talk with the server so he dont forget us.
-    if(client.loop() == false)
-    {
-        client.connect(project_name);
-    }
-
-    if(false == client.connected())
-    {
-        client.connect(project_name);
-    }
+    bool status = true;
 
     // Get current time from RTC
     rtc.getTime(&now, &last);
-
 
     bool timeToSync = false;
 
@@ -195,35 +142,107 @@ void loop()
         else
         {
             Serial.print("fail: ");
+            status = false;
         }
 
         Serial.println(qdStatus);
     }
 
-    //But only send data every minute or so
-    // 6 ->   6*10s =  60s = 1min
-    //12 -> 2*6*10s = 120s = 2min
-    //18 -> 3*6*10s = 180s = 3min
-    //BUT since the delay is not that accurate,
-    // 18 is more like 3.5 to 4 minutes in real life...
-    if(updateCount > 18)
-    {
-        updateCount = 0;
+    return status;
+}
 
+
+void setup()
+{
+    // Open serial communications and wait for port to open:
+    Serial.begin(9600);
+
+    Wire.begin();
+    if(rtc.isrunning())
+    {
+        Serial.println("Clock is running");
+    }
+    else
+    {
+        Serial.println("Clock is NOT running");
+    }
+
+    // KWH interrupt attached to IRQ 0  = pin2
+    attachInterrupt(0, onPulse1, FALLING);
+    // KWH interrupt attached to IRQ 1  = pin3
+    attachInterrupt(1, onPulse2, FALLING);
+
+    m1.setTopic(
+            "FunTechHouse/VMP/meter01data",
+            "FunTechHouse/VMP/meter01"
+            );
+    m2.setTopic(
+            "FunTechHouse/ELP/meter02data",
+            "FunTechHouse/ELP/meter02"
+            );
+
+    Serial.println("Setup: done");
+    //Now some init
+
+    Ethernet.begin(mac);
+
+    bool timeSyncOK = false;
+    int cnt=0;
+    do
+    {
+        timeSyncOK = doTimeSync();
+        cnt++;
+    } while( false == timeSyncOK && cnt < 10);
+
+    if (client.connect(project_name))
+    {
+        //Start to send value 0 to server...
         m1.getValue(str, SIZE);
         sprintf(str + strlen(str)," time=");
         now.appendIsoDateString(str, SIZE);
         Serial.println(str);
-
-        if(client.connected())
-        {
-            client.publish(m1.getTopicPublish(), str);
-        }
+        client.publish(m1.getTopicPublish(), str);
 
         m2.getValue(str, SIZE);
         sprintf(str + strlen(str)," time=");
         now.appendIsoDateString(str, SIZE);
         Serial.println(str);
+        client.publish(m2.getTopicPublish(), str);
+    }
+
+    Serial.println("Init: done");
+}
+
+/**
+ * The main loop, runs all the time, over and over again.
+ */
+void loop()
+{
+    //Serial.println("Loop");
+
+    //Talk with the server so he dont forget us.
+    if(client.loop() == false)
+    {
+        client.connect(project_name);
+    }
+
+    if(false == client.connected())
+    {
+        client.connect(project_name);
+    }
+
+
+    //If there is new data,
+    //then send last value with last time
+    //before we update the time
+    if(m1.oldValue())
+    {
+        Serial.println("M1: old value");
+        m1.getLastValue(str, SIZE);
+        sprintf(str + strlen(str)," time=");
+        now.appendIsoDateString(str, SIZE);
+        Serial.println(str);
+        client.publish(m1.getTopicPublish(), str);
 
         if(client.connected())
         {
@@ -231,6 +250,90 @@ void loop()
         }
     }
 
-    updateCount++;
-    delay(10000); // 10*1000ms = 10s
+    if(m2.oldValue())
+    {
+        Serial.println("M2: old value");
+        m2.getLastValue(str, SIZE);
+        sprintf(str + strlen(str)," time=");
+        now.appendIsoDateString(str, SIZE);
+        Serial.println(str);
+        client.publish(m2.getTopicPublish(), str);
+
+        if(client.connected())
+        {
+            client.publish(m2.getTopicPublish(), str);
+        }
+    }
+
+
+    //Before this point now is the old time
+    doTimeSync();
+    //Now we have current time
+
+    if(m1.isItNextTime())
+    {
+        Serial.println("M1: next value");
+        m1.getValue(str, SIZE);
+        sprintf(str + strlen(str)," time=");
+        now.appendIsoDateString(str, SIZE);
+        Serial.println(str);
+        client.publish(m1.getTopicPublish(), str);
+
+        if(client.connected())
+        {
+            client.publish(m1.getTopicPublish(), str);
+        }
+    }
+
+    if(m2.isItNextTime())
+    {
+        Serial.println("M2: next value");
+        m2.getValue(str, SIZE);
+        sprintf(str + strlen(str)," time=");
+        now.appendIsoDateString(str, SIZE);
+        Serial.println(str);
+        client.publish(m1.getTopicPublish(), str);
+
+        if(client.connected())
+        {
+            client.publish(m2.getTopicPublish(), str);
+        }
+    }
+
+    //Check for value 2, the current value
+    if(m1.newValue())
+    {
+        Serial.println("M1: current value");
+        m1.getValue(str, SIZE);
+        sprintf(str + strlen(str)," time=");
+        now.appendIsoDateString(str, SIZE);
+        Serial.println(str);
+        client.publish(m1.getTopicPublish(), str);
+
+        if(client.connected())
+        {
+            client.publish(m1.getTopicPublish(), str);
+            m1.saveValue();
+        }
+    }
+
+    if(m2.newValue())
+    {
+        Serial.println("M2: current value");
+        m2.getValue(str, SIZE);
+        sprintf(str + strlen(str)," time=");
+        now.appendIsoDateString(str, SIZE);
+        Serial.println(str);
+        client.publish(m1.getTopicPublish(), str);
+
+        if(client.connected())
+        {
+            client.publish(m2.getTopicPublish(), str);
+            m2.saveValue();
+        }
+    }
+
+    //Sleep for a while,
+    //also slow down to this maximun intervall.
+    delay(60000); // 60*1000ms = 60s
 }
