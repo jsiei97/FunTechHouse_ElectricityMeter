@@ -34,6 +34,7 @@
 #include <Ethernet.h>
 #include "PubSubClient.h"
 #include <Wire.h>
+#include <avr/wdt.h>
 
 #include "QuickDate.h"
 #include "DateTime.h"
@@ -194,6 +195,9 @@ void setup()
             "FunTechHouse/ELP/meter02"
             );
 
+    //http://www.nongnu.org/avr-libc/user-manual/group__avr__watchdog.html
+    wdt_enable(WDTO_8S);
+
     Serial.println("Setup: done");
     //Now some init
 
@@ -232,6 +236,9 @@ void setup()
 void loop()
 {
     loopTimer.mark(millis());
+
+    //Feed the watchdog
+    wdt_reset();
 
     //Serial.print("Loop:");
     //Serial.println(millis());
