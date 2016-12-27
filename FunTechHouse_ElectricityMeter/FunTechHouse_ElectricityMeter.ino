@@ -69,6 +69,8 @@ unsigned int lastUpdateMeter2 = 0;
 //If no new data, send anyway, 1min*30=30min
 #define NO_UPDATE_CNT 30
 
+#define LED_LIFE 9
+
 LoopTimer loopTimer(SLEEP_TIME);
 
 /**
@@ -166,7 +168,7 @@ bool doTimeSync()
 
 void setup()
 {
-    pinMode(LED_BUILTIN, OUTPUT);
+    pinMode(LED_LIFE, OUTPUT);
 
     // Open serial communications and wait for port to open:
     Serial.begin(9600);
@@ -378,12 +380,14 @@ void loop()
     if(lc%2==0)
     {
         //Serial.println("HI");
-        digitalWrite(LED_BUILTIN, HIGH);
+        //digitalWrite(LED_LIFE, HIGH);
+        analogWrite(LED_LIFE, 48); // PWM 0..255
     }
     else
     {
         //Serial.println("LO");
-        digitalWrite(LED_BUILTIN, LOW);
+        //digitalWrite(LED_LIFE, LOW);
+        analogWrite(LED_LIFE, 0); // PWM 0..255
     }
 
     lc++;
