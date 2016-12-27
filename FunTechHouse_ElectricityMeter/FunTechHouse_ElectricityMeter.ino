@@ -276,11 +276,10 @@ void loop()
             sprintf(str + strlen(str)," time=");
             now.appendIsoDateString(str, SIZE);
             Serial.println(str);
-            client.publish(m1.getTopicPublish(), str);
 
             if(client.connected())
             {
-                client.publish(m2.getTopicPublish(), str);
+                client.publish(m1.getTopicPublish(), str);
             }
         }
 
@@ -291,7 +290,6 @@ void loop()
             sprintf(str + strlen(str)," time=");
             now.appendIsoDateString(str, SIZE);
             Serial.println(str);
-            client.publish(m2.getTopicPublish(), str);
 
             if(client.connected())
             {
@@ -311,7 +309,6 @@ void loop()
             sprintf(str + strlen(str)," time=");
             now.appendIsoDateString(str, SIZE);
             Serial.println(str);
-            client.publish(m1.getTopicPublish(), str);
 
             if(client.connected())
             {
@@ -326,7 +323,6 @@ void loop()
             sprintf(str + strlen(str)," time=");
             now.appendIsoDateString(str, SIZE);
             Serial.println(str);
-            client.publish(m1.getTopicPublish(), str);
 
             if(client.connected())
             {
@@ -344,7 +340,6 @@ void loop()
             sprintf(str + strlen(str)," time=");
             now.appendIsoDateString(str, SIZE);
             Serial.println(str);
-            client.publish(m1.getTopicPublish(), str);
 
             if(client.connected())
             {
@@ -361,7 +356,6 @@ void loop()
             sprintf(str + strlen(str)," time=");
             now.appendIsoDateString(str, SIZE);
             Serial.println(str);
-            client.publish(m1.getTopicPublish(), str);
 
             if(client.connected())
             {

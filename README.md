@@ -17,3 +17,10 @@ First prototype:
 
 ![prototype](hw/ElectricityMeter_with_DS1307_prototype.jpg)
 
+## MQTT test
+
+Use mosquitto to inspect MQTT messages
+
+    mosquitto_sub -h mosqhub -v -t 'FunTechHouse/VMP/meter01'
+    mosquitto_sub -h mosqhub -v -t 'FunTechHouse/ELP/meter02'
+
