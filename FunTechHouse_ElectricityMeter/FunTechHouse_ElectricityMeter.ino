@@ -39,6 +39,7 @@
 #include "DateTime.h"
 #include "RTC_DS1307.h"
 #include "ElectricityMeter.h"
+#include "LoopTimer.h"
 
 #define SIZE 100
 char str[SIZE];
@@ -57,7 +58,17 @@ char project_name[]  = "FunTechHouse_ElectricityMeter";
 ElectricityMeter m1(ELECTRICITYMETER_IMPL_PER_KWH_500);
 ElectricityMeter m2(ELECTRICITYMETER_IMPL_PER_KWH_500);
 
+unsigned int lastUpdateMeter1 = 0;
+unsigned int lastUpdateMeter2 = 0;
 
+//Outer loop 2s -> blink freq
+#define SLEEP_TIME 2000UL
+//When to send if needed, 2s*30=60s=1min
+#define LOOP_CNT 30
+//If no new data, send anyway, 1min*30=30min
+#define NO_UPDATE_CNT 30
+
+LoopTimer loopTimer(SLEEP_TIME);
 
 /**
  * The MQTT subscribe callback function.
@@ -154,6 +165,8 @@ bool doTimeSync()
 
 void setup()
 {
+    pinMode(LED_BUILTIN, OUTPUT);
+
     // Open serial communications and wait for port to open:
     Serial.begin(9600);
 
@@ -218,7 +231,15 @@ void setup()
  */
 void loop()
 {
-    //Serial.println("Loop");
+    loopTimer.mark(millis());
+
+    //Serial.print("Loop:");
+    //Serial.println(millis());
+
+    //lc -> loop cnt
+    //spread the load over time
+    static unsigned int lc = 0;
+    //Serial.println(lc);
 
     //Talk with the server so he dont forget us.
     if(client.loop() == false)
@@ -235,105 +256,137 @@ void loop()
     //If there is new data,
     //then send last value with last time
     //before we update the time
-    if(m1.oldValue())
+    if(0==lc)
     {
-        Serial.println("M1: old value");
-        m1.getLastValue(str, SIZE);
-        sprintf(str + strlen(str)," time=");
-        now.appendIsoDateString(str, SIZE);
-        Serial.println(str);
-        client.publish(m1.getTopicPublish(), str);
+        Serial.println("LoopCnt 0: ");
 
-        if(client.connected())
+        if(m1.oldValue())
         {
-            client.publish(m2.getTopicPublish(), str);
-        }
-    }
-
-    if(m2.oldValue())
-    {
-        Serial.println("M2: old value");
-        m2.getLastValue(str, SIZE);
-        sprintf(str + strlen(str)," time=");
-        now.appendIsoDateString(str, SIZE);
-        Serial.println(str);
-        client.publish(m2.getTopicPublish(), str);
-
-        if(client.connected())
-        {
-            client.publish(m2.getTopicPublish(), str);
-        }
-    }
-
-
-    //Before this point now is the old time
-    doTimeSync();
-    //Now we have current time
-
-    if(m1.isItNextTime())
-    {
-        Serial.println("M1: next value");
-        m1.getValue(str, SIZE);
-        sprintf(str + strlen(str)," time=");
-        now.appendIsoDateString(str, SIZE);
-        Serial.println(str);
-        client.publish(m1.getTopicPublish(), str);
-
-        if(client.connected())
-        {
+            Serial.println("M1: old value");
+            m1.getLastValue(str, SIZE);
+            sprintf(str + strlen(str)," time=");
+            now.appendIsoDateString(str, SIZE);
+            Serial.println(str);
             client.publish(m1.getTopicPublish(), str);
+
+            if(client.connected())
+            {
+                client.publish(m2.getTopicPublish(), str);
+            }
         }
-    }
 
-    if(m2.isItNextTime())
-    {
-        Serial.println("M2: next value");
-        m2.getValue(str, SIZE);
-        sprintf(str + strlen(str)," time=");
-        now.appendIsoDateString(str, SIZE);
-        Serial.println(str);
-        client.publish(m1.getTopicPublish(), str);
-
-        if(client.connected())
+        if(m2.oldValue())
         {
+            Serial.println("M2: old value");
+            m2.getLastValue(str, SIZE);
+            sprintf(str + strlen(str)," time=");
+            now.appendIsoDateString(str, SIZE);
+            Serial.println(str);
             client.publish(m2.getTopicPublish(), str);
+
+            if(client.connected())
+            {
+                client.publish(m2.getTopicPublish(), str);
+            }
         }
-    }
 
-    //Check for value 2, the current value
-    if(m1.newValue())
-    {
-        Serial.println("M1: current value");
-        m1.getValue(str, SIZE);
-        sprintf(str + strlen(str)," time=");
-        now.appendIsoDateString(str, SIZE);
-        Serial.println(str);
-        client.publish(m1.getTopicPublish(), str);
 
-        if(client.connected())
+        //Before this point now is the old time
+        doTimeSync();
+        //Now we have current time
+
+        if(m1.isItNextTime())
         {
+            Serial.println("M1: next value");
+            m1.getValue(str, SIZE);
+            sprintf(str + strlen(str)," time=");
+            now.appendIsoDateString(str, SIZE);
+            Serial.println(str);
             client.publish(m1.getTopicPublish(), str);
-            m1.saveValue();
+
+            if(client.connected())
+            {
+                client.publish(m1.getTopicPublish(), str);
+            }
         }
-    }
 
-    if(m2.newValue())
-    {
-        Serial.println("M2: current value");
-        m2.getValue(str, SIZE);
-        sprintf(str + strlen(str)," time=");
-        now.appendIsoDateString(str, SIZE);
-        Serial.println(str);
-        client.publish(m1.getTopicPublish(), str);
-
-        if(client.connected())
+        if(m2.isItNextTime())
         {
-            client.publish(m2.getTopicPublish(), str);
-            m2.saveValue();
+            Serial.println("M2: next value");
+            m2.getValue(str, SIZE);
+            sprintf(str + strlen(str)," time=");
+            now.appendIsoDateString(str, SIZE);
+            Serial.println(str);
+            client.publish(m1.getTopicPublish(), str);
+
+            if(client.connected())
+            {
+                client.publish(m2.getTopicPublish(), str);
+            }
         }
+
+        //Check for value 2, the current value
+        //and how long since last update.
+        //60s * lastUpdate => 1min * 30 = 30min
+        if(m1.newValue() || lastUpdateMeter1 >=NO_UPDATE_CNT)
+        {
+            Serial.println("M1: current value");
+            m1.getValue(str, SIZE);
+            sprintf(str + strlen(str)," time=");
+            now.appendIsoDateString(str, SIZE);
+            Serial.println(str);
+            client.publish(m1.getTopicPublish(), str);
+
+            if(client.connected())
+            {
+                client.publish(m1.getTopicPublish(), str);
+                m1.saveValue();
+                lastUpdateMeter1=0;
+            }
+        }
+
+        if(m2.newValue() || lastUpdateMeter2 >=NO_UPDATE_CNT)
+        {
+            Serial.println("M2: current value");
+            m2.getValue(str, SIZE);
+            sprintf(str + strlen(str)," time=");
+            now.appendIsoDateString(str, SIZE);
+            Serial.println(str);
+            client.publish(m1.getTopicPublish(), str);
+
+            if(client.connected())
+            {
+                client.publish(m2.getTopicPublish(), str);
+                m2.saveValue();
+                lastUpdateMeter2=0;
+            }
+        }
+
+        lastUpdateMeter1++;
+        lastUpdateMeter2++;
     }
 
-    //Sleep for a while,
-    //also slow down to this maximun intervall.
-    delay(60000); // 60*1000ms = 60s
+
+
+    if(lc%2==0)
+    {
+        //Serial.println("HI");
+        digitalWrite(LED_BUILTIN, HIGH);
+    }
+    else
+    {
+        //Serial.println("LO");
+        digitalWrite(LED_BUILTIN, LOW);
+    }
+
+    lc++;
+    //If delay is 2s and lc is 30
+    //Then every windows executes every 60s.
+    //This is the maximun send intervall.
+    if(lc>=LOOP_CNT)
+    {
+        lc=0;
+    }
+
+    delay(loopTimer.correctedTime(millis()));
 }
