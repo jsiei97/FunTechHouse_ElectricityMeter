@@ -180,8 +180,10 @@ void setup()
 {
     pinMode(LED_LIFE, OUTPUT);
 
+#ifdef DEBUG
     // Open serial communications and wait for port to open:
     Serial.begin(9600);
+#endif
 
     Wire.begin();
 
