@@ -42,6 +42,16 @@
 #include "ElectricityMeter.h"
 #include "LoopTimer.h"
 
+//#define DEBUG
+
+#ifdef DEBUG
+#define A_PRINTLN(x) Serial.println(x)
+#define A_PRINT(x) Serial.print(x)
+#else
+#define A_PRINTLN(x)
+#define A_PRINT(x)
+#endif
+
 #define SIZE 100
 char str[SIZE];
 
@@ -121,45 +131,45 @@ bool doTimeSync()
 
     if( !rtc.isrunning() )
     {
-        Serial.println("Time to sync time...(RTC is not running)");
+        A_PRINTLN("Time to sync time...(RTC is not running)");
         timeToSync  = true;
     }
 
     // This may be bad if network is not there.
     if( false == now.isTimeSet() )
     {
-        Serial.println("Time to sync time...(Time not set)");
+        A_PRINTLN("Time to sync time...(Time not set)");
         timeToSync  = true;
     }
 
     if( (now.secSince2000()-last.secSince2000()) > (1*60*60) )
     {
-        Serial.println("Time to sync time...(Sync to old)");
-        Serial.println(now.secSince2000());
-        Serial.println(last.secSince2000());
+        A_PRINTLN("Time to sync time...(Sync to old)");
+        A_PRINTLN(now.secSince2000());
+        A_PRINTLN(last.secSince2000());
         timeToSync  = true;
     }
 
     //Check if it is time to sync time with server
     if( true == timeToSync )
     {
-        //Serial.println("Time to sync time...");
+        //A_PRINTLN("Time to sync time...");
         int qdStatus = qd.doTimeSync(str);
         if(qdStatus > 0)
         {
-            Serial.print("ok: ");
-            Serial.print(str);
-            Serial.print(" : ");
+            A_PRINT("ok: ");
+            A_PRINT(str);
+            A_PRINT(" : ");
             now.setTime(str);
             rtc.adjust(&now);
         }
         else
         {
-            Serial.print("fail: ");
+            A_PRINT("fail: ");
             status = false;
         }
 
-        Serial.println(qdStatus);
+        A_PRINTLN(qdStatus);
     }
 
     return status;
@@ -174,14 +184,6 @@ void setup()
     Serial.begin(9600);
 
     Wire.begin();
-    if(rtc.isrunning())
-    {
-        Serial.println("Clock is running");
-    }
-    else
-    {
-        Serial.println("Clock is NOT running");
-    }
 
     // KWH interrupt attached to IRQ 0  = pin2
     attachInterrupt(0, onPulse1, FALLING);
@@ -200,7 +202,7 @@ void setup()
     //http://www.nongnu.org/avr-libc/user-manual/group__avr__watchdog.html
     wdt_enable(WDTO_8S);
 
-    Serial.println("Setup: done");
+    A_PRINTLN("Setup: done");
     //Now some init
 
     Ethernet.begin(mac);
@@ -219,17 +221,17 @@ void setup()
         m1.getValue(str, SIZE);
         sprintf(str + strlen(str)," time=");
         now.appendIsoDateString(str, SIZE);
-        Serial.println(str);
+        A_PRINTLN(str);
         client.publish(m1.getTopicPublish(), str);
 
         m2.getValue(str, SIZE);
         sprintf(str + strlen(str)," time=");
         now.appendIsoDateString(str, SIZE);
-        Serial.println(str);
+        A_PRINTLN(str);
         client.publish(m2.getTopicPublish(), str);
     }
 
-    Serial.println("Init: done");
+    A_PRINTLN("Init: done");
 }
 
 /**
@@ -242,13 +244,13 @@ void loop()
     //Feed the watchdog
     wdt_reset();
 
-    //Serial.print("Loop:");
-    //Serial.println(millis());
+    //A_PRINT("Loop:");
+    //A_PRINTLN(millis());
 
     //lc -> loop cnt
     //spread the load over time
     static unsigned int lc = 0;
-    //Serial.println(lc);
+    //A_PRINTLN(lc);
 
     //Talk with the server so he dont forget us.
     if(client.loop() == false)
@@ -267,15 +269,15 @@ void loop()
     //before we update the time
     if(0==lc)
     {
-        Serial.println("LoopCnt 0: ");
+        A_PRINTLN("LoopCnt 0: ");
 
         if(m1.oldValue())
         {
-            Serial.println("M1: old value");
+            A_PRINTLN("M1: old value");
             m1.getLastValue(str, SIZE);
             sprintf(str + strlen(str)," time=");
             now.appendIsoDateString(str, SIZE);
-            Serial.println(str);
+            A_PRINTLN(str);
 
             if(client.connected())
             {
@@ -285,11 +287,11 @@ void loop()
 
         if(m2.oldValue())
         {
-            Serial.println("M2: old value");
+            A_PRINTLN("M2: old value");
             m2.getLastValue(str, SIZE);
             sprintf(str + strlen(str)," time=");
             now.appendIsoDateString(str, SIZE);
-            Serial.println(str);
+            A_PRINTLN(str);
 
             if(client.connected())
             {
@@ -304,11 +306,11 @@ void loop()
 
         if(m1.isItNextTime())
         {
-            Serial.println("M1: next value");
+            A_PRINTLN("M1: next value");
             m1.getValue(str, SIZE);
             sprintf(str + strlen(str)," time=");
             now.appendIsoDateString(str, SIZE);
-            Serial.println(str);
+            A_PRINTLN(str);
 
             if(client.connected())
             {
@@ -318,11 +320,11 @@ void loop()
 
         if(m2.isItNextTime())
         {
-            Serial.println("M2: next value");
+            A_PRINTLN("M2: next value");
             m2.getValue(str, SIZE);
             sprintf(str + strlen(str)," time=");
             now.appendIsoDateString(str, SIZE);
-            Serial.println(str);
+            A_PRINTLN(str);
 
             if(client.connected())
             {
@@ -335,11 +337,11 @@ void loop()
         //60s * lastUpdate => 1min * 30 = 30min
         if(m1.newValue() || lastUpdateMeter1 >=NO_UPDATE_CNT)
         {
-            Serial.println("M1: current value");
+            A_PRINTLN("M1: current value");
             m1.getValue(str, SIZE);
             sprintf(str + strlen(str)," time=");
             now.appendIsoDateString(str, SIZE);
-            Serial.println(str);
+            A_PRINTLN(str);
 
             if(client.connected())
             {
@@ -351,11 +353,11 @@ void loop()
 
         if(m2.newValue() || lastUpdateMeter2 >=NO_UPDATE_CNT)
         {
-            Serial.println("M2: current value");
+            A_PRINTLN("M2: current value");
             m2.getValue(str, SIZE);
             sprintf(str + strlen(str)," time=");
             now.appendIsoDateString(str, SIZE);
-            Serial.println(str);
+            A_PRINTLN(str);
 
             if(client.connected())
             {
@@ -373,13 +375,13 @@ void loop()
 
     if(lc%2==0)
     {
-        //Serial.println("HI");
+        //A_PRINTLN("HI");
         //digitalWrite(LED_LIFE, HIGH);
         analogWrite(LED_LIFE, 48); // PWM 0..255
     }
     else
     {
-        //Serial.println("LO");
+        //A_PRINTLN("LO");
         //digitalWrite(LED_LIFE, LOW);
         analogWrite(LED_LIFE, 0); // PWM 0..255
     }
