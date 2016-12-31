@@ -76,8 +76,8 @@ unsigned int lastUpdateMeter2 = 0;
 #define SLEEP_TIME 2000UL
 //When to send if needed, 2s*30=60s=1min
 #define LOOP_CNT 30
-//If no new data, send anyway, 1min*30=30min
-#define NO_UPDATE_CNT 30
+//If no new data, send anyway, 1min*60=60min
+#define NO_UPDATE_CNT 60
 
 #define LED_LIFE 9
 
