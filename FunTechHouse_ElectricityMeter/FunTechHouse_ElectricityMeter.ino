@@ -58,7 +58,7 @@ char str[SIZE];
 DateTime now;  ///< Current time
 DateTime last; ///< Last synced time
 RTC_DS1307 rtc;
-QuickDate qd;
+QuickDate qd("bender");
 
 /// This device MAC adress, it is written on the Shield and must be uniq.
 uint8_t mac[]    = { 0x90, 0xA2, 0xDA, 0x00, 0x62, 0x80 };
